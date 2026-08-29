@@ -1,0 +1,27 @@
+{
+  "name": "payment-gateway-integration",
+  "version": "1.0.0",
+  "description": "create features integration payment gateway",
+  "license": "ISC",
+  "author": "Rifal",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "googleapis": "^176.0.0",
+    "joi": "^18.2.5",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.2",
+    "nodemon": "^3.1.14"
+  },
+  "devDependencies": {
+    "prisma": "^7.10.0"
+  }
+}

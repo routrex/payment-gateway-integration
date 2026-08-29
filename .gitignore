@@ -1,0 +1,13 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+# Prisma generated client
+/generated/prisma
+
+
+# AI Editor configs
+.agents/
+.claude/
+.windsurf/
+
