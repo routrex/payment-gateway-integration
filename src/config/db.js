@@ -1,20 +1,22 @@
-import mysql2 from "mysql2/promise";
 import dotenv from "dotenv";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaClient } from "../../generated/prisma/client.ts";
 
 dotenv.config();
 
-export const connectMysql2 = mysql2.createPool({
+const adapter = new PrismaMariaDb({
   user: process.env.DATABASE_USER,
   database: process.env.DATABASE_NAME,
   host: process.env.DATABASE_HOST,
   port: process.env.DATABASE_PORT,
 });
 
+export const prisma = new PrismaClient({ adapter });
+
 export const tesDatabaseConnection = async () => {
   try {
-    const tesConnect = await connectMysql2.getConnection()
-    console.log("Database connected successfully!")
-    tesConnect.release()
+    await prisma.$connect();
+    console.log("Database connected successfully!");
   } catch (err) {
     throw err;
   }
