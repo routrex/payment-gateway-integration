@@ -1,6 +1,27 @@
 import { authorizationUrl, oAuthClient } from "../config/googleOAuth.js";
 import { google } from "googleapis";
-import googleOAuthService from "../service/authService.js";
+import {
+  getProfileService,
+  googleOAuthService,
+} from "../service/authService.js";
+
+export const getProfile = async (req, res) => {
+  const id_user = req.user.id_user;
+
+  try {
+    const result = await getProfileService(id_user);
+    res.status(200).json({
+      success: true,
+      message: `Success get get profile id ${id_user}`,
+      data: result,
+    });
+  } catch (err) {
+    res.status(401).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 export const googleOAuth = (req, res) => {
   res.redirect(authorizationUrl);
@@ -16,7 +37,7 @@ export const googleOAuthCallback = async (req, res) => {
   }
 
   try {
-    const {tokens} = await oAuthClient.getToken(code);
+    const { tokens } = await oAuthClient.getToken(code);
     oAuthClient.setCredentials(tokens);
     const oAuth = google.oauth2({ version: "v2", auth: oAuthClient });
     const { data } = await oAuth.userinfo.get();
@@ -35,5 +56,5 @@ export const googleOAuthCallback = async (req, res) => {
 };
 
 // export const logout = () => {
-  
+
 // }
