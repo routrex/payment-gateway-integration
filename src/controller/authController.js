@@ -55,6 +55,17 @@ export const googleOAuthCallback = async (req, res) => {
   }
 };
 
-// export const logout = () => {
-
-// }
+export const logout = async (req, res) => {
+  const id_user = req.user.id_user;
+  try {
+    res.status(200).json({
+      success: true,
+      message: `Success Logout id ${id_user}!`,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
