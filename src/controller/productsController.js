@@ -1,9 +1,28 @@
 import {
   createProductService,
   deleteProductService,
+  getDetailProductService,
   getProductService,
   updateProductService,
 } from "../service/productsService.js";
+
+export const getDetailProductsController = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    const result = await getDetailProductService(id);
+
+    res.status(200).json({
+      success: true,
+      message: `Success Get Detail Products id ${id}`,
+      data: result,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 export const getAllProductsController = async (req, res) => {
   try {

@@ -4,8 +4,14 @@ import {
   findProductById,
   findProductByName,
   getAllProduct,
+  getDetailProductById,
   updateProduct,
 } from "../repository/productsRepository.js";
+
+export const getDetailProductService = async (id) => {
+  const products = await getDetailProductById(id);
+  return products;
+};
 
 export const getProductService = async () => {
   const products = await getAllProduct();

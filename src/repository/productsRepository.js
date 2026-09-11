@@ -1,7 +1,23 @@
 import { prisma } from "../config/db.js";
 
+export const getDetailProductById = async (id) => {
+  const productAll = await prisma.products.findUnique({
+    where: {
+      id,
+    },
+  });
+  return productAll;
+};
+
 export const getAllProduct = async () => {
-  const productAll = await prisma.products.findMany();
+  const productAll = await prisma.products.findMany({
+    select: {
+      id: true,
+      product_name: true,
+      description: true,
+      price: true,
+    },
+  });
   return productAll;
 };
 
