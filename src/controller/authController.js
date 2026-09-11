@@ -12,7 +12,7 @@ export const getProfile = async (req, res) => {
     const result = await getProfileService(id_user);
     res.status(200).json({
       success: true,
-      message: `Success get get profile id ${id_user}`,
+      message: `Success get profile id ${id_user}`,
       data: result,
     });
   } catch (err) {

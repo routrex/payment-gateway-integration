@@ -1,15 +1,17 @@
 import express from "express";
 import { tesDatabaseConnection } from "./src/config/db.js";
 import authRoutes from "./src/routes/authRoutes.js";
+import productsRoutes from "./src/routes/productsRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
 
-async function startServer() {  
+async function startServer() {
   try {
     await tesDatabaseConnection();
     app.use(express.json());
     app.use("/api/auth", authRoutes);
+    app.use("/api", productsRoutes);
     app.listen(port, () => {
       console.log("Server running on port", port);
     });
@@ -20,4 +22,3 @@ async function startServer() {
 }
 
 startServer();
-

@@ -21,6 +21,7 @@ export const googleOAuthService = async (data) => {
   if (existingUser) {
     const tokenPayload = {
       id_user: existingUser.id,
+      role: existingUser.role
     };
 
     const token = await jwt.sign(tokenPayload, process.env.JWT_SECRET, {
