@@ -1,26 +1,28 @@
 const generateOrderNumber = () => {
-  // Menentukan identitas informasi
+  // specify for identity the informasi
   const identity = "ORD";
 
-  // ambil waktu saat ini
+  // Get the current time
   const now = new Date();
 
+  // Get the current year
   // ambil tahun saat ini
   const year = now.getFullYear();
 
-  // ambil bulan saat ini dan dimulai dari angka 1
+  // Get the current month and starting where number one
   const month = String(now.getMonth() + 1).padStart(2, "0");
 
-  // ambil tanggal saat ini
+  // Get the current date
   const day = String(now.getDate()).padStart(2, "0");
 
-  // gabungkan format tahun-bulan-waktu
+  // Combine the year-month-time format
   const format = `${year}${month}${day}`;
 
+  // create random number
   //  membuat angka acak
   const numberRandom = Math.floor(1000 + Math.random() * 9000);
 
-  //  kemudian gabungkan semuanya
+  // Then combine Everything
   return `${identity}-${format}-${numberRandom}`;
 };
 
