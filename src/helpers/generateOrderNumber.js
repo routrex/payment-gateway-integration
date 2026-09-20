@@ -6,7 +6,6 @@ const generateOrderNumber = () => {
   const now = new Date();
 
   // Get the current year
-  // ambil tahun saat ini
   const year = now.getFullYear();
 
   // Get the current month and starting where number one
@@ -19,7 +18,6 @@ const generateOrderNumber = () => {
   const format = `${year}${month}${day}`;
 
   // create random number
-  //  membuat angka acak
   const numberRandom = Math.floor(1000 + Math.random() * 9000);
 
   // Then combine Everything
