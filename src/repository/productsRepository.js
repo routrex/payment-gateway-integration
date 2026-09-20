@@ -9,6 +9,16 @@ export const getDetailProductById = async (id) => {
   return productAll;
 };
 
+export const getProductById = async (id) => {
+  const productById = await prisma.products.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  return productById;
+};
+
 export const getAllProduct = async () => {
   const productAll = await prisma.products.findMany({
     select: {
@@ -25,6 +35,16 @@ export const findProductById = async (id) => {
   const product = await prisma.products.findFirst({
     where: {
       id,
+    },
+  });
+
+  return product;
+};
+
+export const findProductByIds = async (ids) => {
+  const product = await prisma.products.findMany({
+    where: {
+      id: { in: ids },
     },
   });
 
