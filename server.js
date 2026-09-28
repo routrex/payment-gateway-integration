@@ -3,6 +3,7 @@ import { tesDatabaseConnection } from "./src/config/db.js";
 import authRoutes from "./src/routes/authRoutes.js";
 import productsRoutes from "./src/routes/productsRoutes.js";
 import orderRoutes from "./src/routes/orderRoutes.js"
+import paymentRoutes from "./src/routes/paymentRoutes.js"
 
 const app = express();
 const port = process.env.PORT;
@@ -14,6 +15,7 @@ async function startServer() {
     app.use("/api/auth", authRoutes);
     app.use("/api", productsRoutes);
     app.use("/api", orderRoutes);
+    app.use("/api", paymentRoutes )
     app.listen(port, () => {
       console.log("Server running on port", port);
     });

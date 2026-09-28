@@ -1,18 +1,23 @@
-const roleMiddleware = async (req, res, next) => {
-  const role = req.user.role;
+const roleMiddleware = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({
+        succes: false,
+        message: "User role not found!",
+      });
+    }
 
-  if (role === "ADMIN") {
+    const role = req.user.role;
+
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({
+        succes: false,
+        message: "You do not have permission to access this resource!",
+      });
+    }
+
     next();
-
-    return;
-  }
-
-  if (role !== "ADMIN") {
-    return res.status(403).json({
-      succes: false,
-      message: "You do not have access!",
-    });
-  }
+  };
 };
 
 export default roleMiddleware;

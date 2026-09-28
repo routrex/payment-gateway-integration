@@ -7,11 +7,28 @@ import verifyToken from "../middleware/verifyToken.js";
 import { ordersController } from "../controller/orderControllers.js";
 import validationMiddleware from "../middleware/validationMiddleware.js";
 import { orderValidation } from "../validation/orderValidation.js";
+import roleMiddleware from "../middleware/roleMiddleware.js";
 
 const route = express.Router();
 
-route.get("/products", verifyToken, getAllProductsController);
-route.get("/products/:id", verifyToken, getDetailProductsController);
-route.post("/orders", verifyToken, validationMiddleware(orderValidation), ordersController);
+route.get(
+  "/product-all",
+  verifyToken,
+  roleMiddleware("CUSTOMER"),
+  getAllProductsController,
+);
+route.get(
+  "/product/:id",
+  verifyToken,
+  roleMiddleware("CUSTOMER"),
+  getDetailProductsController,
+);
+route.post(
+  "/orders",
+  verifyToken,
+  roleMiddleware("CUSTOMER"),
+  validationMiddleware(orderValidation),
+  ordersController,
+);
 
 export default route;

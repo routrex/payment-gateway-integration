@@ -19,6 +19,7 @@
     "googleapis": "^176.0.0",
     "joi": "^18.2.8",
     "jsonwebtoken": "^9.0.3",
+    "midtrans-client": "^1.4.3",
     "mysql2": "^3.24.2",
     "nodemon": "^3.1.14"
   },

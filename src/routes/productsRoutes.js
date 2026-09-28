@@ -18,14 +18,14 @@ const route = express.Router();
 route.get(
   "/products-all",
   verifyToken,
-  roleMiddleware,
+  roleMiddleware("ADMIN"),
   getAllProductsController,
 );
 
 route.post(
   "/products",
   verifyToken,
-  roleMiddleware,
+  roleMiddleware("ADMIN"),
   validationMiddleware(productValidation),
   createProducts,
 );
@@ -33,11 +33,16 @@ route.post(
 route.patch(
   "/products/:id",
   verifyToken,
-  roleMiddleware,
+  roleMiddleware("ADMIN"),
   validationMiddleware(updateProductValidation),
   updateProducts,
 );
 
-route.delete("/products/:id", verifyToken, roleMiddleware, deleteProducts);
+route.delete(
+  "/products/:id",
+  verifyToken,
+  roleMiddleware("ADMIN"),
+  deleteProducts,
+);
 
 export default route;
