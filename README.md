@@ -1,103 +1,253 @@
-Payment Gateway Integration API
+# Payment Gateway Integration API
 
-A backend REST API project built to learn and implement payment gateway integration using Midtrans Snap. The project focuses on backend architecture, authentication, authorization, product management, order creation, payment processing, and webhook handling.
+Backend Payment Gateway Integration REST API built with Node.js and Express.js.
 
-This project was built as a local backend REST API only. It is not Dockerized and not deployed.
+This project uses Google OAuth 2.0 for authentication, JWT to access protected endpoints, and Role-Based Authorization to differentiate `ADMIN` and `CUSTOMER` access. The project also implements product management, order management, and payment gateway integration using Midtrans Snap Sandbox.
 
-Tech Stack
+The database uses MySQL with Prisma ORM. Development is done locally using Laragon, and API testing is done using Postman. Ngrok is used to connect the Midtrans webhook to the backend running on localhost.
 
-Node.js
+---
 
-Express.js
+## Features
 
-Prisma ORM
+### Google OAuth 2.0
 
-MySQL
+- Authentication using Google OAuth 2.0
+- Retrieve user information from Google
+- Create users based on Google accounts
+- Generate JWT Access Token after successful authentication
 
-Laragon — local MySQL/database environment
+### JWT Authentication
 
-Postman — API testing
+- Generate Access Token
+- Verify Access Token using middleware
+- Store authenticated user information in `req.user`
+- Protect protected endpoints
 
-Midtrans Snap — payment gateway integration
+### Role-Based Authorization
 
-ngrok — exposes the local webhook endpoint so Midtrans can send notifications
+The project uses two roles:
 
-JWT — authentication
+- `ADMIN`
+- `CUSTOMER`
 
-Google OAuth — social authentication
-
-Joi — request validation
-
-bcryptjs — password hashing
-
-Project Goals
-
-The main goals of this project are to:
-
-Build a RESTful backend API with Express.js.
-
-Implement authentication using email/password and Google OAuth.
-
-Implement JWT-based authentication for protected endpoints.
-
-Apply role-based authorization for ADMIN and CUSTOMER users.
-
-Build product management for administrators.
-
-Build customer order creation and order-detail processing.
-
-Integrate Midtrans Snap for payment processing.
-
-Handle Midtrans payment notifications through a webhook.
-
-Maintain payment and order status consistently.
-
-Practice layered backend architecture and database transactions.
-
-Main Features
-
-Authentication
-
-Register and Login with Google OAuth
-
-JWT-based authentication.
-
-Protected API endpoints using Bearer tokens.
-
-Password hashing with bcryptjs.
-
-Authorization
-
-The application uses two roles:
-
+```text
 ADMIN
+→ Product Management
 
 CUSTOMER
+→ Order Management
+→ Payment Management
+```
 
-Authorization is handled through middleware after JWT verification. Each protected route can define which roles are allowed to access it.
+### Product Management
 
-Product Management
+- Create product
+- Get all products
+- Get product by ID
+- Update product using `PATCH`
+- Delete product
+- Admin-only product management
+- `user_id` is taken from the authenticated user
 
-Administrators can manage products through protected endpoints, while customers can access product information for ordering.
+### Order Management
 
-Product data includes:
+- Create order for customers
+- Create multiple order items
+- Product validation
+- Prevent duplicate products in a single order
+- Retrieve product price from the database
+- Calculate subtotal
+- Calculate order total
+- Generate order number
+- Database transaction for Order and Order Details
 
-Product name
+### Payment Gateway
 
-Description
+- Create payment transaction using Midtrans Snap
+- Use `order_number` as the Midtrans transaction identifier
+- Use `total_amount` as the gross amount
+- Store Snap Token
+- Store Redirect URL
+- Store payment reference and payment method
+- Store payment status and timestamp
 
-Price
+### Midtrans Webhook
 
-User ownership/reference
+- Receive payment notification from Midtrans
+- Process notification using Midtrans transaction notification
+- Find order by `order_number`
+- Validate gross amount
+- Payment status mapping
+- Update Payment and Order using database transaction
+- Handle notifications that have already been processed
 
-The authenticated administrator's user ID is taken from the JWT rather than accepting user_id from the client request body.
+---
 
-Order Management
+## Authentication Flow
 
-Customers can create orders by sending a list of products and quantities.
+### Google OAuth 2.0 Flow
 
-Example request structure:
+> Authentication in this project uses Google OAuth 2.0 only.
 
+```text
+User
+  ↓
+Google OAuth
+  ↓
+Google Authorization
+  ↓
+Google Callback
+  ↓
+Get Google Account Information
+  ↓
+Find / Create User
+  ↓
+Generate JWT Access Token
+  ↓
+Authentication Success
+```
+
+### JWT Authentication Flow
+
+```text
+Client
+  ↓
+Authorization: Bearer <accessToken>
+  ↓
+Authentication Middleware
+  ↓
+Extract Token
+  ↓
+Verify JWT
+  ↓
+Valid?
+  ├── No → 401 Unauthorized
+  │
+  └── Yes
+       ↓
+    req.user
+       ↓
+    Continue Request
+```
+
+---
+
+## Authorization Flow
+
+```text
+JWT Authentication
+  ↓
+req.user.role
+  ↓
+Role Middleware
+  ↓
+Check Allowed Role
+  ↓
+Role Allowed?
+  ├── No → 403 Forbidden
+  │
+  └── Yes
+       ↓
+    Controller
+```
+
+---
+
+## Product Flow
+
+### Create Product
+
+```text
+Admin
+  ↓
+POST /api/products
+  ↓
+JWT Authentication
+  ↓
+ADMIN Authorization
+  ↓
+Validation
+  ↓
+Create Product
+  ↓
+user_id = authenticated user
+  ↓
+Product Created
+```
+
+### Update Product
+
+```text
+Admin
+  ↓
+PATCH /api/products/:id
+  ↓
+JWT Authentication
+  ↓
+ADMIN Authorization
+  ↓
+Validation
+  ↓
+Find Product
+  ↓
+Update Product
+```
+
+Fields that can be updated:
+
+- `product_name`
+- `description`
+- `price`
+
+---
+
+## Order Flow
+
+### Create Order
+
+```text
+Customer
+  ↓
+POST /api/orders
+  ↓
+JWT Authentication
+  ↓
+CUSTOMER Authorization
+  ↓
+Validation
+  ↓
+Get Product IDs
+  ↓
+Check Duplicate Products
+  ↓
+Find Products
+  ↓
+Calculate Subtotal
+  ↓
+Calculate Total Amount
+  ↓
+Generate Order Number
+  ↓
+Database Transaction
+  ↓
+Create Order
+  ↓
+Create Order Details
+  ↓
+COMMIT
+  ↓
+Order Created
+```
+
+#### Create Order Request
+
+```http
+POST /api/orders
+Authorization: Bearer <accessToken>
+```
+
+```json
 {
   "items": [
     {
@@ -110,371 +260,793 @@ Example request structure:
     }
   ]
 }
+```
 
-The server calculates the price and subtotal values from the current product data. Clients do not submit the final order amount manually.
+The client only sends:
 
-The order flow is:
+- `product_id`
+- `quantity`
 
-Product → Order → Order Details → Payment
+The backend handles:
 
-Each order receives a unique business order number such as:
+- `user_id`
+- `price`
+- `subtotal`
+- `total_amount`
+- `order_number`
+- `status_order`
 
+#### Order Number
+
+Example:
+
+```text
 ORD-20260926-8931
+```
 
-The order number is used as the transaction identifier sent to Midtrans, while the database primary key remains an internal ID.
+Format:
 
-Payment Gateway Integration
+```text
+ORD-YYYYMMDD-RANDOM_NUMBER
+```
 
-The project uses Midtrans Snap in Sandbox mode.
+---
 
-Payment creation uses the existing order data to send:
+## Payment Flow
 
-Order number
+### Create Payment
 
-Gross amount
-
-The API stores payment information such as:
-
-Payment reference / transaction ID
-
-Payment method
-
-Payment amount
-
-Payment status
-
-Snap token
-
-Redirect URL
-
-Paid timestamp
-
-Expired timestamp
-
-The application also prevents duplicate payment creation for an order that already has an active pending payment and can reuse the existing Snap transaction information.
-
-Midtrans Webhook
-
-Midtrans notifications are handled through a dedicated webhook endpoint.
-
-The webhook flow is approximately:
-
-Midtrans → ngrok public URL → Express webhook endpoint → payment service → database
-
-The notification is processed using Midtrans' transaction notification mechanism before updating local payment/order records.
-
-Payment status mapping used by the application includes:
-
-Midtrans status
-
-Local payment status
-
-Local order status
-
-pending
-
-PENDING
-
-Remains PENDING
-
-settlement
-
-PAID
-
-PAID
-
-capture + accepted fraud status
-
-PAID
-
-PAID
-
-capture + challenge
-
-PENDING
-
-Remains PENDING
-
-expire
-
-EXPIRED
-
-EXPIRED
-
-cancel / deny / failure
-
-FAILED
-
-FAILED
-
-Payment and order updates are performed inside a database transaction so the two records remain consistent when a webhook is processed.
-
-Backend Architecture
-
-The project follows a layered structure to separate responsibilities between application layers.
-
-Request
+```text
+Customer
   ↓
-Route
+POST /api/payments
   ↓
-Validation Middleware
+JWT Authentication
   ↓
-Authentication Middleware
+CUSTOMER Authorization
   ↓
-Authorization Middleware
+Find Order
   ↓
-Controller
+Check Order Ownership
   ↓
-Service
+Check Order Status
+  ↓
+Find Existing Payment
+  ↓
+Existing Payment?
+  ├── PENDING → Reuse Existing Snap Data
+  ├── PAID → Reject New Payment
+  │
+  └── No Payment
+       ↓
+    Create Midtrans Transaction
+       ↓
+    Store Payment Data
+       ↓
+    Return Snap Token + Redirect URL
+```
+
+#### Create Payment Request
+
+```http
+POST /api/payments
+Authorization: Bearer <accessToken>
+```
+
+```json
+{
+  "order_id": 1
+}
+```
+
+The client does not send:
+
+- `amount`
+- `payment_reference`
+- `payment_method`
+- `status_payment`
+- `snap_token`
+- `redirect_url`
+
+---
+
+## Midtrans Integration
+
+This project uses Midtrans Snap Sandbox.
+
+Transaction data sent:
+
+- `transaction_details.order_id`
+- `transaction_details.gross_amount`
+
+Mapping:
+
+```text
+transaction_details.order_id
+        ↓
+Orders.order_number
+
+transaction_details.gross_amount
+        ↓
+Orders.total_amount
+```
+
+After the transaction is created, Midtrans returns:
+
+- `snap_token`
+- `redirect_url`
+
+---
+
+## Payment Status
+
+Payment statuses used:
+
+- `PENDING`
+- `PAID`
+- `FAILED`
+- `EXPIRED`
+
+### Payment Status Mapping
+
+| Midtrans Status | Application Status |
+| --- | --- |
+| `pending` | `PENDING` |
+| `settlement` | `PAID` |
+| `capture` + `accept` | `PAID` |
+| `capture` + `challenge` | `PENDING` |
+| `capture` + other fraud result | `FAILED` |
+| `expire` | `EXPIRED` |
+| `cancel` | `FAILED` |
+| `deny` | `FAILED` |
+| `failure` | `FAILED` |
+
+---
+
+## Midtrans Webhook Flow
+
+The webhook receives notifications from Midtrans and does not use JWT authentication.
+
+```text
+Midtrans
+  ↓
+POST /api/payments/webhook
+  ↓
+Receive Notification
+  ↓
+Midtrans Transaction Notification
+  ↓
+Find Order by order_number
+  ↓
+Find Payment by order_id
+  ↓
+Validate Gross Amount
+  ↓
+Determine Payment Status
+  ↓
+Database Transaction
+  ↓
+Update Payment
+  ↓
+Update Order
+  ↓
+Return HTTP 200
+```
+
+### Identifier Flow
+
+```text
+Midtrans order_id
+        ↓
+Orders.order_number
+        ↓
+Orders.id
+        ↓
+Payments.order_id
+        ↓
+Payments.id
+```
+
+Payment uses `Payments.id` for updates.
+
+Order uses `Orders.id` for updates.
+
+---
+
+## Database Design
+
+This project uses MySQL and Prisma ORM.
+
+### Main Tables
+
+```text
+Products
+   │
+   ▼
+Orders
+   │
+   ├── Order Details
+   │
+   └── Payments
+```
+
+### Products
+
+Stores product information.
+
+Typical fields:
+
+- `id`
+- `user_id`
+- `product_name`
+- `description`
+- `price`
+- `created_at`
+- `updated_at`
+
+### Orders
+
+Stores main order information.
+
+Typical fields:
+
+- `id`
+- `user_id`
+- `order_number`
+- `total_amount`
+- `status_order`
+- `created_at`
+- `updated_at`
+
+### Order Details
+
+Stores the products contained in an order.
+
+Typical fields:
+
+- `id`
+- `order_id`
+- `product_id`
+- `quantity`
+- `price`
+- `subtotal`
+
+### Payments
+
+Stores payment information for an order.
+
+Typical fields:
+
+- `id`
+- `order_id`
+- `payment_reference`
+- `payment_method`
+- `amount`
+- `status_payment`
+- `snap_token`
+- `redirect_url`
+- `paid_at`
+- `expired_at`
+- `created_at`
+- `updated_at`
+
+Relation:
+
+```text
+Orders 1 ───── 1 Payments
+```
+
+---
+
+## Database Transaction
+
+### Order Creation
+
+```text
+START TRANSACTION
+       ↓
+Create Order
+       ↓
+Create Order Details
+       ↓
+Success?
+  ├── Yes → COMMIT
+  │
+  └── No → ROLLBACK
+```
+
+### Payment Webhook
+
+```text
+START TRANSACTION
+       ↓
+Update Payment
+       ↓
+Update Order
+       ↓
+Success?
+  ├── Yes → COMMIT
+  │
+  └── No → ROLLBACK
+```
+
+---
+
+## Layered Architecture
+
+```text
+Client
+  ↓
+Routes
+  ↓
+Middleware
+  ↓
+Controllers
+  ↓
+Services
   ↓
 Repository
   ↓
 Prisma ORM
   ↓
 MySQL
+```
 
-Layer Responsibilities
+### Middleware
 
-Route
+Responsible for:
 
-Defines API endpoints and middleware order.
+- Authentication
+- Authorization
+- Request validation
 
-Validation Middleware
+### Controller
 
-Validates incoming request data.
+Responsible for:
 
-Provides validated data to later layers.
+- Receiving HTTP requests
+- Retrieving request data
+- Calling services
+- Returning HTTP responses
 
-Authentication Middleware
+### Service
 
-Verifies JWT tokens.
+Responsible for:
 
-Stores authenticated user information in req.user.
+- Business logic
+- Product management
+- Order processing
+- Payment processing
+- Midtrans integration
+- Webhook processing
+- Transaction orchestration
 
-Authorization Middleware
+### Repository
 
-Checks whether the authenticated user's role is allowed for the requested route.
+Responsible for:
 
-Controller
+- Database queries
+- Create data
+- Find data
+- Update data
+- Delete data
 
-Handles HTTP requests and responses.
+### Prisma ORM
 
-Passes validated/authenticated data to services.
+Responsible for database interaction and query execution.
 
-Service
+---
 
-Contains business logic.
+## Technology Stack
 
-Calculates order totals.
+### Backend
 
-Validates product availability/existence for order creation.
+- Node.js
+- Express.js
+- JavaScript ES Modules
 
-Coordinates payment processing and database transactions.
+### Database
 
-Repository
+- MySQL
+- Prisma ORM
+- Laragon
 
-Handles database access through Prisma.
+### Authentication
 
-Keeps database queries separated from business logic.
+- Google OAuth 2.0
+- JSON Web Token (JWT)
 
-Prisma ORM
+### Validation
 
-Provides database access and transaction support.
+- Joi
 
-Database Overview
+### Payment Gateway
 
-The main database areas include:
+- Midtrans Snap Sandbox
 
-Users
+### Testing
 
-UserAccounts
+- Postman
 
-Products
+### Webhook Development
 
-Orders
+- ngrok
 
-OrderDetails
+---
 
-Payments
+## Libraries
 
-The authentication structure separates the main user identity from authentication/account information, allowing a user to have multiple authentication methods such as local login and Google OAuth.
+- `express`
+- `prisma`
+- `@prisma/client`
+- `joi`
+- `jsonwebtoken`
+- `midtrans-client`
+- `dotenv`
 
-The payment structure uses a one-to-one relationship between an order and its payment record.
+---
 
-Authentication and Authorization Flow
+## API Endpoints
 
-Customer/Admin Authentication
+### Authentication
 
-Register/Login
-    ↓
-Authentication
-    ↓
-JWT generated
-    ↓
-Client sends Bearer Token
-    ↓
-verifyToken
-    ↓
-req.user
-    ↓
-roleMiddleware
-    ↓
-Authorized route
-
-Public endpoints such as registration and login do not require JWT authentication.
-
-Protected endpoints use JWT verification followed by role authorization when required.
-
-Payment Flow
-
-1. Customer creates an order
-        ↓
-2. Order status = PENDING
-        ↓
-3. Customer creates a payment
-        ↓
-4. Backend sends transaction data to Midtrans Snap
-        ↓
-5. Snap token / redirect URL returned
-        ↓
-6. Customer continues payment through Midtrans
-        ↓
-7. Midtrans sends payment notification
-        ↓
-8. Backend validates and processes the notification
-        ↓
-9. Payment status is updated
-        ↓
-10. Order status is updated when required
-
-Local Setup
-
-1. Clone the repository
-
-git clone <your-repository-url>
-cd <your-project-folder>
-
-2. Install dependencies
-
-npm install
-
-3. Prepare MySQL
-
-Create the project database using the MySQL environment provided by Laragon.
-
-4. Configure environment variables
-
-Create a .env file and provide the required values for:
-
-PORT=3000
-DATABASE_URL=<your-mysql-database-url>
-JWT_SECRET=<your-jwt-secret>
-SERVER_KEY=<your-midtrans-server-key>
-CLIENT_KEY=<your-midtrans-client-key>
-
-Add any additional OAuth environment variables required by the Google OAuth implementation.
-
-Do not commit .env to the repository.
-
-5. Run Prisma migrations
-
-Use the Prisma migration workflow configured by the project to create/update the database schema.
-
-6. Start the API
-
-npm run dev
-
-or use the project's configured start command.
-
-The API runs locally, for example:
-
-http://localhost:3000
-
-Testing with Postman
-
-Postman is used to test the REST API flow.
-
-Recommended testing sequence:
-
-1. Register user
-2. Login
-3. Receive JWT
-4. Use Bearer Token for protected requests
-5. Test admin product endpoints with an ADMIN account
-6. Test customer product/order endpoints with a CUSTOMER account
-7. Create an order
-8. Create a payment for the order
-9. Open the Midtrans Snap redirect URL
-10. Complete a Sandbox payment
-11. Observe the webhook request
-12. Verify payment/order records in MySQL
-
-Local Webhook Testing with ngrok
-
-Because the backend is running on localhost, Midtrans cannot directly access the webhook endpoint without a public URL.
-
-Start ngrok with the local API port:
-
-ngrok http 3000
-
-Use the generated HTTPS public URL as the Midtrans Payment Notification URL, followed by the project's webhook route.
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET/POST` | `/api/auth/google` | Google OAuth Authentication |
+
+### Products
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/products` | Get All Products |
+| `GET` | `/api/products/:id` | Get Product by ID |
+| `POST` | `/api/products` | Create Product |
+| `PATCH` | `/api/products/:id` | Update Product |
+| `DELETE` | `/api/products/:id` | Delete Product |
+
+Authorization:
+
+```text
+GET    → Authenticated User
+POST   → ADMIN
+PATCH  → ADMIN
+DELETE → ADMIN
+```
+
+### Orders
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/orders` | Create Order |
+
+Authorization:
+
+```text
+CUSTOMER
+```
+
+### Payments
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/payments` | Create Midtrans Payment |
+| `POST` | `/api/payments/webhook` | Receive Midtrans Notification |
+
+Authorization:
+
+```text
+POST /api/payments
+→ CUSTOMER
+
+POST /api/payments/webhook
+→ Midtrans
+```
+
+---
+
+## Postman Testing
+
+The API is tested using Postman.
+
+Main testing flow:
+
+```text
+1. Google OAuth Authentication
+       ↓
+2. Get JWT Access Token
+       ↓
+3. Test JWT Authentication
+       ↓
+4. Test Role Authorization
+       ↓
+5. Create Product as ADMIN
+       ↓
+6. Create Order as CUSTOMER
+       ↓
+7. Create Payment
+       ↓
+8. Open Midtrans Snap
+       ↓
+9. Complete Payment
+       ↓
+10. Receive Webhook
+       ↓
+11. Verify Payment Status
+       ↓
+12. Verify Order Status
+```
+
+Payment methods successfully tested on Midtrans Sandbox:
+
+- QRIS
+- BCA Bank Transfer
+- BRI Bank Transfer
+
+---
+
+## Ngrok Webhook Testing
+
+Because the backend runs on localhost, ngrok is used so that Midtrans can access the webhook endpoint.
+
+```text
+Midtrans
+  ↓
+Public ngrok URL
+  ↓
+Localhost
+  ↓
+Express Webhook Route
+```
 
 Example:
 
-https://<ngrok-id>.ngrok-free.app/<your-webhook-route>
+```text
+https://<ngrok-id>.ngrok-free.app/api/payments/webhook
+```
 
-Keep the Node.js server and ngrok process running while testing payment notifications.
+This URL is used as the Midtrans Payment Notification URL.
 
-Payment Methods Tested
+---
 
-The Midtrans Sandbox integration was tested successfully with:
+## Project Structure
 
-QRIS
+```text
+src/
+│
+├── config/
+│   ├── db.js
+│   ├── googleOAuth.js
+│   └── paymentConfig.js
+│
+├── controllers/
+│   ├── authControllers.js
+│   ├── productControllers.js
+│   ├── orderControllers.js
+│   └── paymentControllers.js
+│
+├── helpers/
+│   └── generateOrderNumber.js
+│
+├── middleware/
+│   ├── verifyToken.js
+│   ├── roleMiddleware.js
+│   └── validationMiddleware.js
+│
+├── repository/
+│   ├── productRepository.js
+│   ├── orderRepository.js
+|   |── userRepository.js
+│   └── paymentRepository.js
+│
+├── services/
+│   ├── authServices.js
+│   ├── productServices.js
+│   ├── orderServices.js
+│   └── paymentServices.js
+│
+├── routes/
+│   ├── authRoutes.js
+│   ├── productRoutes.js
+│   ├── orderRoutes.js
+│   └── paymentRoutes.js
+│
+├── validators/
+│   ├── productValidators.js
+│   ├── orderValidators.js
+│   
+│
+└── ...
+│
+├── prisma/
+│   └── schema.prisma
+│
+├── .env
+├── .gitignore
+├── package.json
+├── package-lock.json
+├── server.js
+└── README.md
+```
 
-BCA bank transfer
+---
 
-BRI bank transfer
+## Installation
 
-These tests were performed in the Midtrans Sandbox environment.
+### Prerequisites
 
-Current Limitations
+Install:
 
-This project is intentionally focused on learning and implementing the core backend payment flow. The current version still has some limitations:
+- Node.js
+- Express.js
+- npm
+- MySQL
+- Laragon
+- Postman
+- ngrok
 
-Payment expiry handling is not fully automated for every expiry scenario.
+### Clone Repository
 
-The project has only been tested with selected Midtrans Sandbox payment methods.
+```bash
+git clone <repository-url>
+```
 
-The API is not deployed to a production server.
+### Navigate to Project
 
-The project is not containerized with Docker.
+```bash
+cd <project-folder>
+```
 
-Order number generation currently uses a random numeric suffix, so collision handling is delegated to the database unique constraint.
+### Install Dependencies
 
-Future Improvements
+```bash
+npm install
+```
 
-Possible future improvements include:
+### Configure MySQL
 
-More complete payment expiry and retry handling.
+Create a MySQL database through Laragon and adjust `DATABASE_URL` in `.env`.
 
-Additional Midtrans payment methods.
+Example:
 
-Payment status reconciliation using transaction status checks.
+```env
+DATABASE_URL="mysql://username:password@localhost:3306/database_name"
+```
 
-More robust order number generation.
+### Environment Variables
 
-Automated tests.
+```env
+PORT=3000
 
-Production deployment.
+DATABASE_URL="mysql://username:password@localhost:3306/database_name"
 
-Docker support.
+JWT_SECRET=your_jwt_secret
 
-Improved error handling and logging.
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
-Project Status
+MIDTRANS_SERVER_KEY=your_midtrans_server_key
+MIDTRANS_CLIENT_KEY=your_midtrans_client_key
+```
 
-Completed — Backend REST API Payment Gateway Integration
+### Prisma
 
-The core payment gateway flow has been implemented and tested locally using Midtrans Sandbox, Postman, MySQL, and ngrok.
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
 
-This project is currently kept as a local backend portfolio/learning project and can be extended in the future when additional payment and production requirements are needed.
+### Run Application
+
+```bash
+npm run dev
+```
+
+The backend runs on localhost, for example:
+
+```text
+http://localhost:3000
+```
+
+### Run ngrok
+
+```bash
+ngrok http 3000
+```
+
+Use the generated HTTPS URL as the Midtrans Payment Notification URL.
+
+---
+
+## Development Environment
+
+This project is built for local backend development.
+
+```text
+Node.js + Express.js
+        ↓
+Prisma ORM
+        ↓
+MySQL
+        ↓
+Laragon
+```
+
+Webhook payment:
+
+```text
+Midtrans Sandbox
+        ↓
+ngrok
+        ↓
+localhost
+```
+
+> This project does not use Docker and is not deployed.
+
+---
+
+## Backend Concepts
+
+This project was built to practice and implement:
+
+- REST API
+- Google OAuth 2.0
+- JWT Authentication
+- Role-Based Authorization
+- Middleware
+- Request Validation
+- Layered Architecture
+- Controller Layer
+- Service Layer
+- Repository Layer
+- Prisma ORM
+- MySQL
+- Database Relationships
+- Database Transactions
+- Product Management
+- Order Processing
+- Payment Gateway Integration
+- Midtrans Snap
+- Payment Status Mapping
+- Webhook Handling
+- Postman API Testing
+- ngrok Webhook Testing
+
+---
+
+## Project Limitations
+
+### Payment Expiration Handling
+
+The `EXPIRED` status is available and can be processed through the expiry notification from Midtrans. However, automatic handling for the case where the payment period has expired but the backend has not yet received or processed the expiry notification is not fully implemented.
+
+### Payment Testing
+
+Payment testing was done using Midtrans Sandbox.
+
+Payment methods tested:
+
+- QRIS
+- BCA Bank Transfer
+- BRI Bank Transfer
+
+Other Midtrans payment methods have not been fully tested in this version.
+
+---
+
+## Future Improvements
+
+Possible improvements for future development:
+
+- Improve payment expiration handling
+- Add payment status reconciliation
+- Add retry payment for failed or expired transactions
+- Test additional Midtrans payment methods
+- Add order history
+- Add payment history
+- Add automated testing
+- Improve API error handling
+- Add API documentation using OpenAPI / Swagger
+- Production deployment
+- Docker containerization
+- Logging and monitoring
